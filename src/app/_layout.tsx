@@ -1,18 +1,47 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { useEffect } from 'react';
 
-SplashScreen.preventAutoHideAsync();
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { FilesProvider } from '@/context/FilesContext';
+import { SettingsProvider } from '@/context/SettingsContext';
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+function ProtectedNavigation() {
+  const { isLoggedIn } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    const onLoginPage = segments[0] === 'login';
+
+    if (!isLoggedIn && !onLoginPage) {
+      router.replace('/login');
+    }
+
+    if (isLoggedIn && onLoginPage) {
+      router.replace('/');
+    }
+  }, [isLoggedIn, segments, router]);
+
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="login" />
+      <Stack.Screen name="add-file" />
+      <Stack.Screen name="cleanup-confirm" />
+      <Stack.Screen name="cleanup-success" />
+    </Stack>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <SettingsProvider>
+      <FilesProvider>
+        <AuthProvider>
+          <ProtectedNavigation />
+        </AuthProvider>
+      </FilesProvider>
+    </SettingsProvider>
   );
 }
